@@ -985,6 +985,11 @@ window._modalJustClosed = false;
   function setPhoto(src){
     if (src) { elPhoto.src = src; pendingPhoto = src; }
   }
+  elPhoto.style.cursor='zoom-in';
+  elPhoto.addEventListener('click', e=>{
+    e.stopPropagation();
+    if (elPhoto.src) openLightbox(elPhoto.src, currentName || '');
+  });
   function renderChips(){
     elPosWrap.querySelectorAll('.pos-chip').forEach(ch => {
       ch.classList.toggle('sel', currentPositions.includes(ch.dataset.pos));
