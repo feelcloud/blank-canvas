@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
+import originalHtmlUrl from "../original-index.html?url";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -14,16 +15,23 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const originalHtml = __ORIGINAL_HTML__;
-
 function Index() {
   const frameRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    let cancelled = false;
     const frame = frameRef.current;
     if (!frame) return;
 
-    frame.srcdoc = originalHtml;
+    fetch(originalHtmlUrl)
+      .then((response) => response.text())
+      .then((html) => {
+        if (!cancelled) frame.srcdoc = html;
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
