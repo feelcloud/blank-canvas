@@ -58,24 +58,24 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .filter-note{font-size:10px;color:var(--muted);margin-left:auto;font-style:italic;white-space:nowrap;}
 
 /* ── DESKTOP BOARD ── */
-.board{flex:1;display:flex;gap:12px;padding:14px;overflow-x:auto;overflow-y:hidden;align-items:stretch;min-height:0;}
-.column{flex:1;min-width:200px;background:var(--bg3);border-radius:14px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.board{flex:1;display:flex;gap:10px;padding:12px;overflow:hidden;align-items:stretch;min-height:0;}
+.column{flex:1 1 0;min-width:0;background:var(--bg3);border-radius:14px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 .col-header{flex-shrink:0;padding:14px 14px 12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--bg2),var(--bg3));position:relative;text-align:center;z-index:10;}
 .col-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue);}
 .col-header.goleiros::before{background:linear-gradient(90deg,var(--red),#e74c3c);}
 .col-title{font-family:'Inter Tight',sans-serif;font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:3px;color:#fff;}
 .col-badge{display:inline-block;margin-top:4px;font-size:10px;font-weight:700;background:rgba(26,109,186,.25);color:var(--blue);border:1px solid rgba(26,109,186,.4);border-radius:20px;padding:2px 10px;}
 .col-badge.g{background:rgba(192,57,43,.2);color:#e87060;border-color:rgba(192,57,43,.4);}
-.cards-list{flex:1;overflow-y:auto;padding:8px 7px;display:flex;flex-direction:column;gap:0;min-height:0;}
+.cards-list{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 6px;display:flex;flex-direction:column;gap:0;min-height:0;min-width:0;}
 .cards-list::-webkit-scrollbar{width:4px;}
 .cards-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 
 /* ── CARD ROW ── */
-.card-row{display:flex;align-items:center;gap:5px;padding:3px 0;}
-.row-num{font-family:'Inter Tight',sans-serif;font-size:17px;font-weight:700;color:var(--muted);min-width:26px;text-align:center;flex-shrink:0;user-select:none;}
+.card-row{display:flex;align-items:center;gap:4px;padding:3px 0;min-width:0;width:100%;}
+.row-num{font-family:'Inter Tight',sans-serif;font-size:15px;font-weight:700;color:var(--muted);min-width:20px;text-align:center;flex-shrink:0;user-select:none;}
 
 /* ── CARD (layout via inline styles in JS) ── */
-.card{flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:9px;cursor:pointer;user-select:none;transition:border-color .2s,transform .15s,box-shadow .2s,opacity .3s,filter .3s,background .3s;}
+.card{flex:1 1 0;min-width:0;background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:8px;cursor:pointer;user-select:none;transition:border-color .2s,transform .15s,box-shadow .2s,opacity .3s,filter .3s,background .3s;overflow:hidden;}
 .card:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:0 6px 20px rgba(26,109,186,.2);}
 .card.dragging{opacity:.35;cursor:grabbing;transform:none;box-shadow:none;}
 .card.dimmed{background:var(--bg2);border-color:var(--border);opacity:.35;filter:grayscale(.7) brightness(.65);}
@@ -191,8 +191,8 @@ input[type=number]{-moz-appearance:textfield;}
   .kit-tab.active{border-bottom-color:var(--blue);background:rgba(26,109,186,.08);}
   .kit-tab.active.gol{border-bottom-color:var(--red);}
   .mobile-columns{flex:1;min-height:0;overflow:hidden;position:relative;width:100%;}
-  .mobile-slider{display:flex;height:100%;will-change:transform;}
-  .mobile-col{flex:0 0 100vw;width:100vw;height:100%;overflow-y:auto;padding:10px 10px 20px;display:flex;flex-direction:column;gap:0;}
+  .mobile-slider{display:flex;height:100%;will-change:transform;width:max-content;}
+  .mobile-col{flex:0 0 100vw;width:100vw;max-width:100vw;height:100%;overflow-y:auto;overflow-x:hidden;padding:10px 10px 20px;display:flex;flex-direction:column;gap:0;}
   .card-row{padding:2px 0;gap:4px;}
   .row-num{font-size:14px;min-width:22px;}
   .card{padding:8px;}
@@ -916,6 +916,111 @@ function attachPhotoZoom(card, name) {
   img.style.cursor='zoom-in';
   img.addEventListener('click', e=>{ e.stopPropagation(); openLightbox(img.src, name); });
 }
+
+/* ═══ MODAL DE EDIÇÃO ═══ */
+window._modalJustClosed = false;
+(function(){
+  const overlay   = document.getElementById('modal-overlay');
+  const elName    = document.getElementById('modal-player-name');
+  const elKit     = document.getElementById('modal-player-kit');
+  const elPhoto   = document.getElementById('modal-photo');
+  const elPhotoUrl= document.getElementById('modal-photo-url');
+  const elPosWrap = document.getElementById('modal-pos-chips');
+  const elJogos   = document.getElementById('m-jogos');
+  const elGols    = document.getElementById('m-gols');
+  const elAss     = document.getElementById('m-ass');
+  const elAmar    = document.getElementById('m-amar');
+  const elVerm    = document.getElementById('m-verm');
+  const btnClose  = document.getElementById('modal-close');
+  const btnCancel = document.getElementById('modal-cancel');
+  const btnSave   = document.getElementById('modal-save');
+  const btnApply  = document.getElementById('btn-apply-url');
+  const btnUpload = document.getElementById('btn-upload-photo');
+  const fileInput = document.getElementById('modal-photo-input');
+  const photoBtn  = document.getElementById('modal-photo-btn');
+
+  let currentName = null;
+  let currentPositions = [];
+  let pendingPhoto = null;
+
+  function setPhoto(src){
+    if (src) { elPhoto.src = src; pendingPhoto = src; }
+  }
+  function renderChips(){
+    elPosWrap.querySelectorAll('.pos-chip').forEach(ch => {
+      ch.classList.toggle('sel', currentPositions.includes(ch.dataset.pos));
+    });
+  }
+  elPosWrap.addEventListener('click', e => {
+    const ch = e.target.closest('.pos-chip'); if (!ch) return;
+    const pos = ch.dataset.pos;
+    const i = currentPositions.indexOf(pos);
+    if (i >= 0) currentPositions.splice(i,1); else currentPositions.push(pos);
+    renderChips();
+  });
+
+  window.openModal = function(name){
+    const s = playerState[name]; if (!s) return;
+    currentName = name;
+    currentPositions = Array.isArray(s.posicao) ? [...s.posicao] : [];
+    pendingPhoto = s.foto || null;
+    const p = PLAYERS.find(pp => pp.name === name);
+    elName.textContent = name;
+    elKit.textContent = p ? p.kit : '';
+    elPhoto.src = s.foto || (typeof avatarUrl==='function' ? avatarUrl(name) : '');
+    elPhotoUrl.value = '';
+    elJogos.value = s.jogos ?? '';
+    elGols.value  = s.gols ?? '';
+    elAss.value   = s.assistencias ?? '';
+    elAmar.value  = s.amarelos ?? '';
+    elVerm.value  = s.vermelhos ?? '';
+    renderChips();
+    overlay.classList.add('open');
+  };
+
+  function closeModal(){
+    overlay.classList.remove('open');
+    currentName = null;
+    window._modalJustClosed = true;
+    setTimeout(()=>{ window._modalJustClosed = false; }, 250);
+  }
+  btnClose.addEventListener('click', closeModal);
+  btnCancel.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
+
+  btnApply.addEventListener('click', () => {
+    const v = (elPhotoUrl.value || '').trim();
+    if (v) setPhoto(v);
+  });
+  btnUpload.addEventListener('click', () => fileInput.click());
+  photoBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => setPhoto(ev.target.result);
+    reader.readAsDataURL(f);
+    fileInput.value = '';
+  });
+
+  function num(v){ if (v==='' || v==null) return undefined; const n=Number(v); return isNaN(n)?undefined:n; }
+
+  btnSave.addEventListener('click', () => {
+    if (!currentName) return;
+    const s = playerState[currentName]; if (!s) return;
+    s.posicao = [...currentPositions];
+    s.jogos = num(elJogos.value);
+    s.gols = num(elGols.value);
+    s.assistencias = num(elAss.value);
+    s.amarelos = num(elAmar.value);
+    s.vermelhos = num(elVerm.value);
+    if (pendingPhoto) s.foto = pendingPhoto;
+    (cardEls[currentName]||[]).forEach(c => refreshCard(c, currentName));
+    if (typeof fbSaveSoon === 'function') fbSaveSoon();
+    closeModal();
+  });
+})();
+
 
 </script>
 </body>
