@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import originalHtmlUrl from "../original-index.html?url";
+import originalHtml from "../original-index.html?raw";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -23,11 +23,7 @@ function Index() {
     const frame = frameRef.current;
     if (!frame) return;
 
-    fetch(originalHtmlUrl)
-      .then((response) => response.text())
-      .then((html) => {
-        if (!cancelled) frame.srcdoc = html;
-      });
+    if (!cancelled) frame.srcdoc = originalHtml;
 
     return () => {
       cancelled = true;
