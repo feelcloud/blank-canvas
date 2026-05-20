@@ -58,8 +58,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .filter-note{font-size:10px;color:var(--muted);margin-left:auto;font-style:italic;white-space:nowrap;}
 
 /* ── DESKTOP BOARD ── */
-.board{flex:1;display:flex;gap:12px;padding:14px;overflow-x:auto;overflow-y:hidden;align-items:stretch;min-height:0;}
-.column{flex:1;min-width:200px;background:var(--bg3);border-radius:14px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.board{flex:1;display:flex;gap:10px;padding:12px;overflow:hidden;align-items:stretch;min-height:0;}
+.column{flex:1 1 0;min-width:0;background:var(--bg3);border-radius:14px;border:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
 .col-header{flex-shrink:0;padding:14px 14px 12px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,var(--bg2),var(--bg3));position:relative;text-align:center;z-index:10;}
 .col-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue);}
 .col-header.goleiros::before{background:linear-gradient(90deg,var(--red),#e74c3c);}
