@@ -378,36 +378,61 @@ function fbKey(str) {
     .replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
 }
 
+const LS_KEY = 'sj_quakes_state_v1';
+function buildSnapshot() {
+  const players = {};
+  Object.entries(playerState).forEach(([name, s]) => {
+    const d = { n:name, p:s.posicao||[], d:s.dimmed||false,
+                j:s.jogos, g:s.gols, a:s.assistencias, am:s.amarelos, v:s.vermelhos };
+    if (s.foto) d.f = s.foto;
+    players[fbKey(name)] = d;
+  });
+  const orders = {};
+  KIT_ORDER.forEach(kit => {
+    const list = desktopColumns[kit];
+    if (list) {
+      const names = [...list.querySelectorAll('.card[data-name]')].map(c=>c.dataset.name).filter(Boolean);
+      if (names.length) orders[fbKey(kit)] = names;
+    }
+  });
+  return { players, orders, ts: Date.now() };
+}
+function lsSave(snap) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(snap)); }
+  catch(e) { console.warn('[LS] Save error:', e); }
+}
+function lsLoad() {
+  try { const raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : null; }
+  catch(e) { return null; }
+}
+
 let _fbTimer = null;
+let _fbOk = null; // null=unknown, true=working, false=failing
 function fbSaveSoon() {
   clearTimeout(_fbTimer);
   _fbTimer = setTimeout(async () => { _fbTimer = null; await fbSave(); }, 900);
 }
 
 async function fbSave() {
-  if (!_stateRef) { console.warn('[FB] Not initialized'); return; }
+  const snap = buildSnapshot();
+  // Always persist locally first — guarantees the user's own changes survive a reload
+  lsSave(snap);
+  if (!_stateRef) { console.warn('[FB] Not initialized — saved locally only'); return; }
   try {
-    const players = {};
-    Object.entries(playerState).forEach(([name, s]) => {
-      const d = { n:name, p:s.posicao||[], d:s.dimmed||false,
-                  j:s.jogos, g:s.gols, a:s.assistencias, am:s.amarelos, v:s.vermelhos };
-      if (s.foto) d.f = s.foto;
-      players[fbKey(name)] = d;
-    });
-    const orders = {};
-    KIT_ORDER.forEach(kit => {
-      const list = desktopColumns[kit];
-      if (list) {
-        const names = [...list.querySelectorAll('.card[data-name]')].map(c=>c.dataset.name).filter(Boolean);
-        if (names.length) orders[fbKey(kit)] = names;
-      }
-    });
-    console.log('[FB] Saving', Object.keys(players).length, 'players');
-    await _stateRef.set({ players, orders, ts: Date.now() });
+    console.log('[FB] Saving', Object.keys(snap.players).length, 'players');
+    await _stateRef.set(snap);
+    _fbOk = true;
     console.log('[FB] Saved OK');
   } catch(e) {
+    _fbOk = false;
     console.error('[FB] Save error:', e);
-    alert('Erro ao salvar: ' + e.message);
+    // Only alert once per session to avoid spamming
+    if (!window._fbAlerted) {
+      window._fbAlerted = true;
+      alert('Aviso: não foi possível salvar na nuvem (' + (e.code || e.message) + ').\n' +
+            'Suas alterações estão salvas apenas neste navegador.\n\n' +
+            'Para sincronizar entre dispositivos, atualize as regras do Firestore (veja o chat).');
+    }
   }
 }
 
