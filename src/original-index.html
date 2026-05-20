@@ -485,15 +485,29 @@ function applyFbState(data) {
 }
 
 function fbStart() {
-  if (!_stateRef) { console.warn('[FB] Not initialized'); return; }
+  // 1) Apply local snapshot immediately so the user always sees their last edits
+  const local = lsLoad();
+  if (local) { try { applyFbState(local); } catch(e) { console.warn('[LS] Apply error:', e); } }
+
+  if (!_stateRef) { console.warn('[FB] Not initialized — running in local-only mode'); _fbOk = false; return; }
   console.log('[FB] Connecting to', _fbCfg.projectId);
   _stateRef.get().then(snap => {
-    if (snap.exists) applyFbState(snap.data());
+    _fbOk = true;
+    if (snap.exists) { applyFbState(snap.data()); lsSave(snap.data()); }
     _stateRef.onSnapshot(snap => {
       if (snap.metadata.hasPendingWrites || _fbTimer) return;
       applyFbState(snap.data());
-    }, e => console.warn('[FB] Snapshot error:', e));
-  }).catch(e => console.warn('[FB] Load error:', e));
+      lsSave(snap.data());
+    }, e => { _fbOk = false; console.warn('[FB] Snapshot error:', e); });
+  }).catch(e => {
+    _fbOk = false;
+    console.error('[FB] Load error:', e);
+    if (!window._fbAlerted) {
+      window._fbAlerted = true;
+      alert('Aviso: não foi possível ler da nuvem (' + (e.code || e.message) + ').\n' +
+            'Usando dados salvos neste navegador. Atualize as regras do Firestore para sincronizar entre dispositivos.');
+    }
+  });
 }
 
 /* ═══ DATA ═══ */
